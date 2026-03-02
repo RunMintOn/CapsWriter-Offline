@@ -6,6 +6,9 @@
 
 **CapsWriter-Offline** 是一个专为 Windows 打造的**完全离线**语音输入工具。
 
+> 本仓库当前包含了 Linux 适配改动（尤其是 X11 实时输入、终端粘贴兼容）。
+> 原项目地址：<https://github.com/HaujetZhao/CapsWriter-Offline>
+
 
 ## 🚀 更新说明：
 
@@ -70,7 +73,43 @@ LLM 角色既可以使用 Ollama 运行的本地模型，又可以用 API 访问
     -   当前实时模式仅支持 **X11**（Wayland 暂不支持）。
     -   Linux 实时模式默认使用“非阻塞监听”，按键原行为会保留。
     -   如需 UI 相关能力，请自行安装 `tkinter`（例如 Ubuntu: `sudo apt install python3-tk`）。
+    -   当前已在 **Linux Mint (X11)** 实测通过；其它 X11 发行版大概率可用，但仍建议自行验证。
 -   **MacOS**：由于底层的 `keyboard` 库已放弃支持 MacOS，且系统权限限制极多，暂时无法支持。
+
+
+## 🐧 Linux 5分钟上手（推荐）
+
+如果你是 Linux 新用户，建议先按下面这条最短路径跑通：
+
+1.  **准备依赖**：
+    - `python3`（建议 3.10+）
+    - `ffmpeg`
+    - `xclip` 与 `xsel`（用于剪贴板粘贴输出）
+    - `wmctrl` 与 `xprop`（用于前台窗口识别）
+2.  **安装系统包**（Debian/Ubuntu/Mint）：
+    ```bash
+    sudo apt update
+    sudo apt install -y ffmpeg xclip xsel wmctrl x11-utils python3-tk
+    ```
+3.  **安装 Python 依赖**：
+    ```bash
+    pip install -r requirements-server.txt -r requirements-client.txt
+    ```
+4.  **下载模型**：按本文下方“快速开始”中的模型说明，解压到 `models/` 对应目录。
+5.  **启动服务端**：
+    ```bash
+    python3 start_server.py
+    ```
+6.  **启动客户端（实时）**：
+    ```bash
+    python3 start_client.py
+    ```
+7.  **按住快捷键说话**：Linux 默认是 `Right Shift`（可在 `config_client.py` 里改）。
+
+如果你只想先验证识别链路，可以先跑文件转录：
+```bash
+python3 start_client.py /path/to/your_audio.wav
+```
 
 
 ## 🎬 快速开始
@@ -103,6 +142,15 @@ LLM 角色既可以使用 Ollama 运行的本地模型，又可以用 API 访问
 
 **Q: 为什么按了没反应？**  
 A: 请确认 `start_client.exe` 的黑窗口还在运行。若想在管理员权限运行的程序中输入，也需以管理员权限运行客户端。
+
+**Q: Linux 下终端里不粘贴 / 报 `Could not setup clipboard`？**  
+A: 先安装剪贴板依赖：`xclip` 和 `xsel`。客户端会优先用粘贴模式输出；在终端窗口会自动使用 `Ctrl+Shift+V` 路径。若剪贴板不可用，会降级为模拟打字（稳定性可能下降）。
+
+**Q: Codex/终端里报 `Failed to paste image ... incorrect type received from clipboard`？**  
+A: 这是终端把 `Ctrl+V` 当作其他粘贴行为导致的。当前版本已针对终端做了快捷键路由（优先 `Ctrl+Shift+V`），请更新后重启客户端再试。
+
+**Q: Linux 实时模式为什么只写 X11？**  
+A: 当前实时热键监听是按 X11 路径适配的。Wayland 的全局输入限制更严格，不同桌面实现差异大，暂未在本项目中做统一支持。
 
 **Q: 为什么识别结果没字？**  
 A: 到 `年/月/assets` 文件夹中检查录音文件，看是不是没有录到音；听听录音效果，是不是麦克风太差，建议使用桌面 USB 麦克风；检查麦克风权限。
