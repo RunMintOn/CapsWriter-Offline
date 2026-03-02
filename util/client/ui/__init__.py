@@ -16,22 +16,43 @@ util.ui.set_ui_logger(logger)
 # 2. 导出客户端特有的 UI 组件
 from util.client.ui.tips import TipsDisplay
 
-# 3. 重新导出通用 UI 组件 (Re-export)
-# 这样客户端其他模块只需 from util.client.ui import ... 即可
-from util.ui import (
-    toast,
-    toast_stream,
-    ToastMessage,
-    ToastMessageManager,
-    ToastMessageManager,
-    enable_min_to_tray,
-    stop_tray,
-)
+def toast(*args, **kwargs):
+    """延迟调用通用 UI 的 toast。"""
+    return util.ui.toast(*args, **kwargs)
 
-# 4. 导出菜单处理器（供 Startup 使用）
-from util.ui.rectify_menu_handler import on_add_rectify_record
-from util.ui.hotword_menu_handler import on_add_hotword
-from util.ui.context_menu_handler import on_edit_context
+
+def toast_stream(*args, **kwargs):
+    """延迟调用通用 UI 的流式 toast。"""
+    return util.ui.toast_stream(*args, **kwargs)
+
+
+def enable_min_to_tray(*args, **kwargs):
+    """延迟调用通用 UI 的托盘功能。"""
+    return util.ui.enable_min_to_tray(*args, **kwargs)
+
+
+def stop_tray(*args, **kwargs):
+    """延迟调用通用 UI 的停止托盘功能。"""
+    return util.ui.stop_tray(*args, **kwargs)
+
+
+# 3. 透传 toast 相关类型（可能为 None，取决于平台依赖）
+ToastMessage = util.ui.ToastMessage
+ToastMessageManager = util.ui.ToastMessageManager
+
+def on_add_rectify_record(*args, **kwargs):
+    from util.ui.rectify_menu_handler import on_add_rectify_record as _impl
+    return _impl(*args, **kwargs)
+
+
+def on_add_hotword(*args, **kwargs):
+    from util.ui.hotword_menu_handler import on_add_hotword as _impl
+    return _impl(*args, **kwargs)
+
+
+def on_edit_context(*args, **kwargs):
+    from util.ui.context_menu_handler import on_edit_context as _impl
+    return _impl(*args, **kwargs)
 
 __all__ = [
     'logger',

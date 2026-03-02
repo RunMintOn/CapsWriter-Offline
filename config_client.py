@@ -1,6 +1,7 @@
 import os
 from collections.abc import Iterable
 from pathlib import Path
+from platform import system
 
 # 版本信息
 __version__ = '2.4'
@@ -56,7 +57,7 @@ class ClientConfig:
     llm_enabled = True          # 是否启用 LLM 润色功能，需要配置 LLM/ 目录下的角色文件
     llm_stop_key = 'esc'        # 中断 LLM 输出的快捷键
 
-    enable_tray = True          # 客户端默认启用托盘图标功能
+    enable_tray = system() == 'Windows'  # 托盘仅在 Windows 默认启用
 
     # 日志配置
     log_level = 'INFO'          # 日志级别：'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
@@ -128,4 +129,3 @@ r"""
   {'key': 'f12', 'type': 'keyboard', 'suppress': True, 'hold_mode': True, 'enabled': True}, 
   {'key': 'x2', 'type': 'mouse', 'suppress': True, 'hold_mode': True, 'enabled': True}, 
 """
-

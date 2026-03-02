@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from platform import system
 
 # 版本信息
 __version__ = '2.4'
@@ -19,7 +20,7 @@ class ServerConfig:
     format_num = True       # 输出时是否将中文数字转为阿拉伯数字
     format_spell = True     # 输出时是否调整中英之间的空格
 
-    enable_tray = True        # 是否启用托盘图标功能
+    enable_tray = system() == 'Windows'  # 托盘仅在 Windows 默认启用
 
     # 日志配置
     log_level = 'INFO'        # 日志级别：'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
@@ -112,4 +113,3 @@ class FunASRNanoGGUFArgs:
     similar_threshold = 0.6     # 热词相似度阈值
     max_hotwords = 20           # 每次替换的最大热词数
     verbose = False
-

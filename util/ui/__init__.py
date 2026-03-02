@@ -4,7 +4,6 @@
 该模块设计为 Client 和 Server 共用，日志记录器通过注入方式加载。
 """
 import logging
-from typing import Any
 
 # ============================================================
 # Logger 代理机制
@@ -33,12 +32,53 @@ def set_ui_logger(real_logger):
     """设置 UI 模块使用的日志记录器"""
     logger.set_target(real_logger)
 
-# ============================================================
-# 导出组件
-# ============================================================
-
-from .toast import toast, toast_stream, ToastMessage, ToastMessageManager
+# tray 模块在 Linux 无 GUI 的情况下也可安全导入（内部已做平台检测）
 from .tray import enable_min_to_tray, stop_tray
+
+# toast 相关导入改为延迟加载，避免在无 tkinter 环境下导入失败
+_toast_import_error = None
+ToastMessage = None
+ToastMessageManager = None
+
+
+def _load_toast_symbols() -> bool:
+    """按需导入 toast 相关符号。"""
+    global _toast_import_error, ToastMessage, ToastMessageManager
+    if ToastMessage is not None and ToastMessageManager is not None:
+        return True
+    if _toast_import_error is not None:
+        return False
+
+    try:
+        from .toast import ToastMessage as _ToastMessage
+        from .toast import ToastMessageManager as _ToastMessageManager
+        ToastMessage = _ToastMessage
+        ToastMessageManager = _ToastMessageManager
+        return True
+    except Exception as e:
+        _toast_import_error = e
+        logger.warning(f"Toast 功能不可用，已自动降级: {e}")
+        return False
+
+
+def toast(*args, **kwargs):
+    """显示 Toast；若依赖不可用则降级为日志输出。"""
+    if not _load_toast_symbols():
+        if args:
+            logger.info(f"[Toast降级] {args[0]}")
+        return None
+
+    from .toast import toast as _toast
+    return _toast(*args, **kwargs)
+
+
+def toast_stream(*args, **kwargs):
+    """流式 Toast；若依赖不可用则静默降级。"""
+    if not _load_toast_symbols():
+        return None
+
+    from .toast import toast_stream as _toast_stream
+    return _toast_stream(*args, **kwargs)
 
 __all__ = [
     'logger',

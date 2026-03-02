@@ -13,13 +13,17 @@ import util.ui
 # 1. 注入 Server Logger 到通用 UI 模块
 util.ui.set_ui_logger(logger)
 
-# 2. 重新导出通用 UI 组件 (Re-export)
-from util.ui import (
-    enable_min_to_tray,
-    toast,          # 服务端理论上也可能发 toast
-)
-# 注意：stop_tray 通常是在 cleanup 中使用，也可以导出
-from util.ui.tray import stop_tray
+def enable_min_to_tray(*args, **kwargs):
+    return util.ui.enable_min_to_tray(*args, **kwargs)
+
+
+def stop_tray(*args, **kwargs):
+    return util.ui.stop_tray(*args, **kwargs)
+
+
+def toast(*args, **kwargs):
+    """服务端 toast 调用（在无 GUI 环境自动降级）。"""
+    return util.ui.toast(*args, **kwargs)
 
 
 __all__ = [

@@ -184,6 +184,11 @@ def init_mic() -> None:
     """初始化并运行麦克风模式"""
     from util.client.state import console
 
+    if system() != 'Windows':
+        console.print("[yellow]当前平台暂不支持麦克风实时模式（全局热键依赖 Windows 事件过滤）。[/yellow]")
+        console.print("[cyan]可用替代方案：使用文件转录模式，例如 `python start_client.py your_audio.wav`[/cyan]")
+        sys.exit(1)
+
     # 注册清理函数
     lifecycle.register_on_shutdown(cleanup_client_resources)
 

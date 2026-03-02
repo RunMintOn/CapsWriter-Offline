@@ -63,9 +63,12 @@ LLM 角色既可以使用 Ollama 运行的本地模型，又可以用 API 访问
 
 ## 💻 平台支持
 
-目前**仅能保证在 Windows 10/11 (64位) 下完美运行**。
+目前**Windows 10/11 (64位)** 体验最完整。
 
--   **Linux**：暂无环境进行测试和打包，无法保证兼容性。
+-   **Windows**：完整支持（服务端 + 客户端 + 全局快捷键 + 托盘）。
+-   **Linux**：首轮支持 `start_server.py` 和 `start_client.py <音视频文件>`（文件转录模式）。
+    -   暂不支持麦克风实时模式（全局快捷键依赖 Windows 事件过滤）。
+    -   如需 UI 相关能力，请自行安装 `tkinter`（例如 Ubuntu: `sudo apt install python3-tk`）。
 -   **MacOS**：由于底层的 `keyboard` 库已放弃支持 MacOS，且系统权限限制极多，暂时无法支持。
 
 

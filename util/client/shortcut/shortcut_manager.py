@@ -17,6 +17,7 @@ from pynput import keyboard, mouse
 from . import logger
 from util.client.shortcut.key_mapper import *
 from util.client.shortcut.key_mapper import KeyMapper
+from util.client.shortcut.key_mapper import IS_WINDOWS
 from util.client.shortcut.emulator import ShortcutEmulator
 from util.client.shortcut.event_handler import ShortcutEventHandler
 from util.client.shortcut.task import ShortcutTask
@@ -244,6 +245,9 @@ class ShortcutManager:
 
     def start(self) -> None:
         """启动所有监听器"""
+        if not IS_WINDOWS:
+            raise RuntimeError("Linux/macOS 暂不支持当前全局快捷键实现（win32_event_filter）。请使用文件转录模式。")
+
         has_keyboard = any(s.type == 'keyboard' for s in self.shortcuts if s.enabled)
         has_mouse = any(s.type == 'mouse' for s in self.shortcuts if s.enabled)
 

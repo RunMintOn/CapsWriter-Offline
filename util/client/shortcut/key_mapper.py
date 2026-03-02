@@ -4,14 +4,20 @@
 
 处理按键名称和虚拟键码之间的转换，以及相关常量定义
 """
+from platform import system
 
 from pynput import keyboard
-from pynput._util.win32 import KeyTranslator
 from . import logger
 
+IS_WINDOWS = system() == 'Windows'
 
-# 创建键盘翻译器实例（用于 VK 到字符的转换）
-_key_translator = KeyTranslator()
+if IS_WINDOWS:
+    from pynput._util.win32 import KeyTranslator
+    # 创建键盘翻译器实例（用于 VK 到字符的转换）
+    _key_translator = KeyTranslator()
+else:
+    _key_translator = None
+
 
 # 特殊键 VK 映射（从 pynput 复制）
 _SPECIAL_KEYS = {
@@ -105,13 +111,14 @@ class KeyMapper:
         if vk in NUMPAD_KEYS:
             return NUMPAD_KEYS[vk]
 
-        # 使用 pynput 的 KeyTranslator 获取字符（字母、数字、符号键）
-        try:
-            params = _key_translator(vk, is_press=True)
-            if 'char' in params and params['char'] is not None:
-                return params['char']
-        except Exception:
-            pass
+        # 仅 Windows 下使用 KeyTranslator 获取字符
+        if _key_translator is not None:
+            try:
+                params = _key_translator(vk, is_press=True)
+                if 'char' in params and params['char'] is not None:
+                    return params['char']
+            except Exception:
+                pass
 
         # 未知键码，返回 vk_ 格式
         return f'vk_{vk}'
