@@ -9,6 +9,30 @@
 > 本仓库当前包含了 Linux 适配改动（尤其是 X11 实时输入、终端粘贴兼容）。
 > 原项目地址：<https://github.com/HaujetZhao/CapsWriter-Offline>
 
+## 🤖 给大模型看的快速配置提示词
+
+如果你想把这个仓库链接直接发给 ChatGPT / Claude / Gemini 之类的大模型，让它一步步帮你配置 Linux 环境，可以直接复制下面这段话：
+
+```text
+你是我的 Linux 助手。请基于这个仓库 README，指导我在 Linux Mint（X11）上把项目从 0 配置到可用。
+
+要求：
+1) 先检查我的环境（Python、pip、ffmpeg、xclip/xsel、wmctrl/xprop、X11 会话）
+2) 再给出“可直接复制执行”的命令，按顺序完成依赖安装
+3) 指导我下载并放置模型到正确目录
+4) 分别启动 server 和 client（实时模式 + 文件转录模式）
+5) 如果失败，按报错给出最短排障路径
+6) 优先使用本仓库 README 中的 Linux 说明，不要假设 Windows 操作步骤
+
+请先输出“检查清单”，再输出“逐步命令”，最后输出“常见报错应对”。
+```
+
+建议把你的实际环境也补充给大模型，例如：
+- 发行版：Linux Mint 22
+- 会话：X11
+- 终端：GNOME Terminal / Codex Terminal
+- 是否已安装模型：是 / 否
+
 
 ## 🚀 更新说明：
 
