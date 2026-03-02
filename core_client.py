@@ -56,6 +56,37 @@ def _check_macos_permissions() -> None:
             os.umask(0o000)
 
 
+def _check_linux_realtime_requirements() -> None:
+    """
+    检查 Linux 实时模式运行条件。
+
+    仅在麦克风模式下检查：需图形会话且为 X11。
+    """
+    if system() != 'Linux' or sys.argv[1:]:
+        return
+
+    session_type = (os.environ.get('XDG_SESSION_TYPE') or '').lower()
+    display = os.environ.get('DISPLAY')
+
+    if session_type and session_type != 'x11':
+        print(f'Linux 实时模式当前仅支持 X11，会话类型为：{session_type}')
+        print('可用替代方案：使用文件转录模式，例如 `python start_client.py your_audio.wav`')
+        sys.exit(1)
+
+    if not display:
+        print('Linux 实时模式需要图形会话（未检测到 DISPLAY）')
+        print('可用替代方案：使用文件转录模式，例如 `python start_client.py your_audio.wav`')
+        sys.exit(1)
+
+    # 提前检测 pynput 是否可访问 X 会话，避免后续堆栈报错
+    try:
+        from pynput import keyboard as _pynput_keyboard  # noqa: F401
+    except Exception as e:
+        print(f'Linux 实时模式初始化失败：无法连接图形会话 ({e})')
+        print('请确认当前终端在桌面会话内运行，且 DISPLAY 可访问。')
+        sys.exit(1)
+
+
 async def main_mic() -> None:
     """
     麦克风模式主函数
@@ -182,12 +213,7 @@ async def main_file(files: List[Path]) -> None:
 
 def init_mic() -> None:
     """初始化并运行麦克风模式"""
-    from util.client.state import console
-
-    if system() != 'Windows':
-        console.print("[yellow]当前平台暂不支持麦克风实时模式（全局热键依赖 Windows 事件过滤）。[/yellow]")
-        console.print("[cyan]可用替代方案：使用文件转录模式，例如 `python start_client.py your_audio.wav`[/cyan]")
-        sys.exit(1)
+    _check_linux_realtime_requirements()
 
     # 注册清理函数
     lifecycle.register_on_shutdown(cleanup_client_resources)
@@ -231,6 +257,7 @@ def init_file(files: List[Path]) -> None:
 if __name__ == "__main__":
     # 检查 MacOS 权限
     _check_macos_permissions()
+    _check_linux_realtime_requirements()
     
     # 如果参数传入文件，那就转录文件
     # 如果没有多余参数，就从麦克风输入

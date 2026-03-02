@@ -9,6 +9,35 @@ __version__ = '2.4'
 # 项目根目录
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+_DEFAULT_SHORTCUTS_WINDOWS = [
+    {
+        'key': 'caps_lock',     # 监听大写锁定键
+        'type': 'keyboard',     # 是键盘快捷键
+        'suppress': True,       # Windows 支持阻塞并补发
+        'hold_mode': True,      # 长按模式
+        'enabled': True
+    },
+    {
+        'key': 'x2',
+        'type': 'mouse',
+        'suppress': True,
+        'hold_mode': True,
+        'enabled': True
+    },
+]
+
+_DEFAULT_SHORTCUTS_LINUX = [
+    {
+        'key': 'shift_r',       # Linux 默认使用右 Shift，避免 CapsLock 副作用
+        'type': 'keyboard',
+        'suppress': False,      # Linux X11 首版使用非阻塞监听
+        'hold_mode': True,
+        'enabled': True
+    },
+]
+
+_DEFAULT_SHORTCUTS_OTHER = _DEFAULT_SHORTCUTS_WINDOWS
+
 
 # 客户端配置
 class ClientConfig:
@@ -16,26 +45,15 @@ class ClientConfig:
     port = '6016'               # Server 端口
 
     # 快捷键配置列表
-    shortcuts = [
-        {
-            'key': 'caps_lock',     # 监听大写锁定键
-            'type': 'keyboard',     # 是键盘快捷键
-            'suppress': True,      # 不阻塞按键（但录音结束会补发）
-            'hold_mode': True,      # 长按模式
-            'enabled': True         # 启用此快捷键
-        },
-        {
-            'key': 'x2',
-            'type': 'mouse',
-            'suppress': True,
-            'hold_mode': True,
-            'enabled': True
-        },
-    ]
+    shortcuts = (
+        _DEFAULT_SHORTCUTS_WINDOWS if system() == 'Windows'
+        else _DEFAULT_SHORTCUTS_LINUX if system() == 'Linux'
+        else _DEFAULT_SHORTCUTS_OTHER
+    )
 
     threshold    = 0.3          # 快捷键触发阈值（秒）
 
-    paste        = False        # 是否以写入剪切板然后模拟 Ctrl-V 粘贴的方式输出结果
+    paste        = True         # 是否以写入剪切板然后模拟 Ctrl-V 粘贴的方式输出结果
     restore_clip = True         # 模拟粘贴后是否恢复剪贴板
 
     save_audio = True           # 是否保存录音文件
@@ -54,7 +72,7 @@ class ClientConfig:
     hot_rectify = 0.6           # 纠错历史 RAG 匹配阈值（低阈值，用于 LLM 上下文）
     hot_rule = True             # 是否启用自定义规则替换（基于正则表达式）
 
-    llm_enabled = True          # 是否启用 LLM 润色功能，需要配置 LLM/ 目录下的角色文件
+    llm_enabled = False         # 是否启用 LLM 润色功能，需要配置 LLM/ 目录下的角色文件
     llm_stop_key = 'esc'        # 中断 LLM 输出的快捷键
 
     enable_tray = system() == 'Windows'  # 托盘仅在 Windows 默认启用

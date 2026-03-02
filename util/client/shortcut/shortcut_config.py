@@ -71,16 +71,22 @@ class Shortcut:
         # 转小写
         key = key.lower().strip()
 
-        # 替换常见别名
+        # 常见别名（整词映射）
         aliases = {
             'capslock': 'caps_lock',
             'caps lock': 'caps_lock',
-            ' ': 'space',
+            'spacebar': 'space',
             'control': 'ctrl',
+            'right shift': 'shift_r',
+            'rshift': 'shift_r',
+            'right ctrl': 'ctrl_r',
+            'rctrl': 'ctrl_r',
+            'right alt': 'alt_r',
+            'ralt': 'alt_r',
         }
 
-        for old, new in aliases.items():
-            key = key.replace(old, new)
+        if key in aliases:
+            key = aliases[key]
 
         # 移除左右修饰符标记（pynput 会自动处理）
         # 保留 'left ctrl' 这样的形式

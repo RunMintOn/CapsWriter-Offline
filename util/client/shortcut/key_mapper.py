@@ -124,6 +124,92 @@ class KeyMapper:
         return f'vk_{vk}'
 
     @staticmethod
+    def pynput_key_to_name(key) -> str | None:
+        """
+        将 pynput 的按键对象转换为项目内部 key 名称。
+
+        Args:
+            key: pynput 的 Key 或 KeyCode 对象
+
+        Returns:
+            str | None: 标准化后的键名；无法识别时返回 None
+        """
+        # 字符键
+        if hasattr(key, 'char') and key.char is not None:
+            return str(key.char).lower()
+
+        # KeyCode 可能包含 vk
+        if hasattr(key, 'vk') and key.vk is not None:
+            if key.vk in NUMPAD_KEYS:
+                return NUMPAD_KEYS[key.vk]
+
+        # 特殊键（Key 枚举）
+        name = getattr(key, 'name', None)
+        if not name:
+            return None
+
+        aliases = {
+            'caps_lock': 'caps_lock',
+            'num_lock': 'num_lock',
+            'scroll_lock': 'scroll_lock',
+            'space': 'space',
+            'enter': 'enter',
+            'tab': 'tab',
+            'esc': 'esc',
+            'backspace': 'backspace',
+            'delete': 'delete',
+            'insert': 'insert',
+            'home': 'home',
+            'end': 'end',
+            'page_up': 'page_up',
+            'page_down': 'page_down',
+            'left': 'left',
+            'right': 'right',
+            'up': 'up',
+            'down': 'down',
+            'shift': 'shift',
+            'shift_r': 'shift_r',
+            'ctrl': 'ctrl',
+            'ctrl_r': 'ctrl_r',
+            'alt': 'alt',
+            'alt_r': 'alt_r',
+            'cmd': 'cmd',
+            'cmd_r': 'cmd_r',
+            'menu': 'menu',
+            'pause': 'pause',
+            'print_screen': 'print_screen',
+        }
+
+        # 功能键
+        if name.startswith('f') and name[1:].isdigit():
+            return name
+
+        return aliases.get(name, name)
+
+    @staticmethod
+    def pynput_button_to_name(button) -> str | None:
+        """
+        将 pynput 鼠标按钮对象转换为项目内部按钮名称。
+
+        Args:
+            button: pynput.mouse.Button
+
+        Returns:
+            str | None: 'x1' / 'x2' / 其他按钮名；无法识别返回 None
+        """
+        name = getattr(button, 'name', None)
+        if name:
+            return name
+
+        # 兜底：字符串格式通常是 "Button.x1"
+        text = str(button)
+        if text.endswith('.x1'):
+            return 'x1'
+        if text.endswith('.x2'):
+            return 'x2'
+        return None
+
+    @staticmethod
     def name_to_key(key_name: str):
         """
         将按键名称转换为 pynput 按键对象

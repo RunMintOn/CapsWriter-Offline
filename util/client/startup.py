@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 from platform import system
-from util.client.state import get_state
+from util.client.state import get_state, console
 from . import logger
 from config_client import ClientConfig as Config
 from util.client.cleanup import request_exit_from_tray
@@ -133,9 +133,14 @@ def setup_client_components(base_dir):
     shortcuts = [Shortcut(**sc) for sc in Config.shortcuts]
     logger.info(f"正在初始化快捷键管理器，共 {len(shortcuts)} 个快捷键")
 
-    shortcut_manager = ShortcutManager(state, shortcuts)
-    state.shortcut_manager = shortcut_manager
-    shortcut_manager.start()
+    try:
+        shortcut_manager = ShortcutManager(state, shortcuts)
+        state.shortcut_manager = shortcut_manager
+        shortcut_manager.start()
+    except RuntimeError as e:
+        logger.error(f"快捷键后端初始化失败: {e}")
+        console.print(f"[red]快捷键初始化失败：{e}[/red]")
+        raise
 
     # 为了兼容性，同时保留旧的 shortcut_handler 引用
     state.shortcut_handler = shortcut_manager
@@ -154,4 +159,3 @@ def setup_client_components(base_dir):
 
     logger.info("客户端初始化完成，等待语音输入...")
     return state
-

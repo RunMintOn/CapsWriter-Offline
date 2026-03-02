@@ -7,7 +7,14 @@ shortcut 子模块
 
 from .. import logger
 from util.client.shortcut.shortcut_config import Shortcut, CommonShortcuts
-from util.client.shortcut.shortcut_manager import ShortcutManager
+
+
+def __getattr__(name):
+    """懒加载 ShortcutManager，避免在包导入阶段触发平台依赖。"""
+    if name == 'ShortcutManager':
+        from util.client.shortcut.shortcut_manager import ShortcutManager
+        return ShortcutManager
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 __all__ = [
     'logger',

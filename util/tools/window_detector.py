@@ -128,24 +128,95 @@ def _get_linux_window_info() -> dict:
     """Linux 平台窗口检测"""
     try:
         import subprocess
+        from pathlib import Path
 
-        # 使用 wmctrl 获取活动窗口
-        result = subprocess.run(
-            ['wmctrl', '-G', '-a', ':ACTIVE:'],
-            capture_output=True,
-            text=True
-        )
+        # 优先使用 xdotool 获取活动窗口
+        win_id = ''
+        try:
+            win_id_res = subprocess.run(
+                ['xdotool', 'getactivewindow'],
+                capture_output=True,
+                text=True
+            )
+            if win_id_res.returncode == 0:
+                win_id = win_id_res.stdout.strip()
+        except FileNotFoundError:
+            pass
 
-        if result.returncode == 0:
-            parts = result.stdout.strip().split()
-            if len(parts) >= 5:
-                title = ' '.join(parts[5:])
-                return {
-                    'title': title,
-                    'class_name': '',
-                    'process_name': '',
-                    'app_name': title.split()[0] if title else ''
-                }
+        # xdotool 不可用时，改用 xprop 获取活动窗口 ID
+        if not win_id:
+            root_res = subprocess.run(
+                ['xprop', '-root', '_NET_ACTIVE_WINDOW'],
+                capture_output=True,
+                text=True
+            )
+            if root_res.returncode == 0 and '#' in root_res.stdout:
+                win_hex = root_res.stdout.split('#', 1)[1].strip()
+                if win_hex.lower() not in ('0x0', '0'):
+                    try:
+                        win_id = str(int(win_hex, 16))
+                    except Exception:
+                        win_id = ''
+
+        if win_id:
+            title = ''
+            process_name = ''
+
+            # 窗口标题
+            try:
+                title_res = subprocess.run(
+                    ['xdotool', 'getwindowname', win_id],
+                    capture_output=True,
+                    text=True
+                )
+                if title_res.returncode == 0:
+                    title = title_res.stdout.strip()
+            except FileNotFoundError:
+                pass
+
+            # 进程 PID + 标题（wmctrl 兜底）
+            pid = ''
+            wm_res = subprocess.run(
+                ['wmctrl', '-lp'],
+                capture_output=True,
+                text=True
+            )
+            if wm_res.returncode == 0:
+                target_hex = format(int(win_id), '#010x')
+                for line in wm_res.stdout.splitlines():
+                    parts = line.split(None, 4)
+                    if len(parts) < 5:
+                        continue
+                    wid, _desk, wpid, _host, wtitle = parts
+                    if wid.lower() == target_hex.lower():
+                        pid = wpid
+                        if not title:
+                            title = wtitle.strip()
+                        break
+
+            if pid.isdigit():
+                comm_path = Path(f'/proc/{pid}/comm')
+                if comm_path.exists():
+                    process_name = comm_path.read_text(encoding='utf-8', errors='ignore').strip()
+
+            # 窗口类名
+            class_res = subprocess.run(
+                ['xprop', '-id', str(int(win_id)), 'WM_CLASS'],
+                capture_output=True,
+                text=True
+            )
+            class_name = ''
+            if class_res.returncode == 0:
+                out = class_res.stdout.strip()
+                if '=' in out:
+                    class_name = out.split('=', 1)[1].strip().strip('"')
+
+            return {
+                'title': title,
+                'class_name': class_name,
+                'process_name': process_name,
+                'app_name': process_name or (title.split()[0] if title else '')
+            }
     except Exception:
         pass
 

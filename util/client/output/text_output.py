@@ -14,9 +14,9 @@ import re
 
 import keyboard
 import pyclip
-from pynput import keyboard as pynput_keyboard
 
 from config_client import ClientConfig as Config
+from util.tools.window_detector import get_active_window_info
 from . import logger
 
 
@@ -28,6 +28,52 @@ class TextOutput:
     提供文本输出功能，支持模拟打字和粘贴两种方式。
     """
     
+    @staticmethod
+    def _is_terminal_window(window_info: dict) -> bool:
+        """判断当前活动窗口是否像终端。"""
+        if not window_info:
+            return False
+
+        text = ' '.join([
+            str(window_info.get('title', '')),
+            str(window_info.get('class_name', '')),
+            str(window_info.get('process_name', '')),
+            str(window_info.get('app_name', '')),
+        ]).lower()
+
+        terminal_keywords = [
+            'terminal', 'gnome-terminal', 'konsole', 'xterm', 'alacritty',
+            'kitty', 'wezterm', 'tilix', 'tabby', 'warp', 'tmux', 'codex',
+        ]
+        return any(k in text for k in terminal_keywords)
+
+    @staticmethod
+    def _send_paste_hotkey(controller, key_module, is_terminal: bool) -> None:
+        """
+        发送粘贴快捷键。
+
+        Linux 终端通常使用 Ctrl+Shift+V，其他应用使用 Ctrl+V。
+        """
+        if platform.system() == 'Darwin':
+            with controller.pressed(key_module.Key.cmd):
+                controller.tap('v')
+            return
+
+        # Windows/Linux 常规
+        if not is_terminal:
+            with controller.pressed(key_module.Key.ctrl):
+                controller.tap('v')
+            return
+
+        # Linux 终端：优先 Ctrl+Shift+V，回退 Shift+Insert
+        try:
+            with controller.pressed(key_module.Key.ctrl):
+                with controller.pressed(key_module.Key.shift):
+                    controller.tap('v')
+        except Exception:
+            with controller.pressed(key_module.Key.shift):
+                controller.tap(key_module.Key.insert)
+
     @staticmethod
     def strip_punc(text: str) -> str:
         """
@@ -81,37 +127,66 @@ class TextOutput:
         except Exception:
             temp = ''
         
-        # 复制结果
-        pyclip.copy(text)
+        # 复制结果（失败则降级为打字输出）
+        try:
+            pyclip.copy(text)
+        except Exception as e:
+            logger.warning(f"剪贴板不可用，降级为打字输出: {e}")
+            self._type_text(text)
+            return
+
+        # 粘贴结果（优先使用 pynput）
+        try:
+            from pynput import keyboard as pynput_keyboard
+
+            window_info = get_active_window_info()
+            is_terminal = self._is_terminal_window(window_info)
+
+            controller = pynput_keyboard.Controller()
+            self._send_paste_hotkey(controller, pynput_keyboard, is_terminal)
+        except Exception as e:
+            logger.warning(f"pynput 粘贴失败，降级 keyboard.press_and_release: {e}")
+            try:
+                # 终端场景优先尝试 Ctrl+Shift+V
+                window_info = get_active_window_info()
+                if self._is_terminal_window(window_info):
+                    keyboard.press_and_release('ctrl+shift+v')
+                else:
+                    keyboard.press_and_release('ctrl+v')
+            except Exception as ex:
+                logger.warning(f"keyboard 粘贴失败，降级打字输出: {ex}")
+                self._type_text(text)
         
-        # 粘贴结果（使用 pynput 模拟 Ctrl+V）
-        controller = pynput_keyboard.Controller()
-        if platform.system() == 'Darwin':
-            # macOS: Command+V
-            with controller.pressed(pynput_keyboard.Key.cmd):
-                controller.tap('v')
-        else:
-            # Windows/Linux: Ctrl+V
-            with controller.pressed(pynput_keyboard.Key.ctrl):
-                controller.tap('v')
-        
-        logger.debug("已发送粘贴命令 (Ctrl+V)")
+        logger.debug("已发送粘贴命令")
         
         # 还原剪贴板
         if Config.restore_clip:
             await asyncio.sleep(0.1)
-            pyclip.copy(temp)
-            logger.debug("剪贴板已恢复")
+            try:
+                pyclip.copy(temp)
+                logger.debug("剪贴板已恢复")
+            except Exception as e:
+                logger.warning(f"恢复剪贴板失败: {e}")
     
     def _type_text(self, text: str) -> None:
         """
         通过模拟打字方式输出文本
 
-        使用 keyboard.write 替代 pynput.keyboard.Controller.type()，
-        避免与中文输入法冲突。
+        Windows 优先使用 keyboard.write；
+        Linux/macOS 使用 pynput Controller.type，避免 keyboard 库权限问题。
 
         Args:
             text: 要输出的文本
         """
         logger.debug(f"使用打字方式输出文本，长度: {len(text)}")
-        keyboard.write(text)
+        if platform.system() == 'Windows':
+            keyboard.write(text)
+            return
+
+        try:
+            from pynput import keyboard as pynput_keyboard
+            controller = pynput_keyboard.Controller()
+            controller.type(text)
+        except Exception as e:
+            logger.warning(f"pynput 打字输出失败，降级到 keyboard.write: {e}")
+            keyboard.write(text)

@@ -7,6 +7,7 @@ LLM Typing 输出模式
 """
 import asyncio
 import keyboard
+import platform
 
 from config_client import ClientConfig as Config
 from util.tools.asyncio_to_thread import to_thread
@@ -14,6 +15,24 @@ from util.client.output.text_output import TextOutput
 from util.client.clipboard import paste_text
 from util.llm.llm_stop_monitor import reset, should_stop
 from . import logger
+
+
+def _type_write(text: str) -> None:
+    """跨平台打字输出。"""
+    if not text:
+        return
+
+    if platform.system() == 'Windows':
+        keyboard.write(text)
+        return
+
+    try:
+        from pynput import keyboard as pynput_keyboard
+        controller = pynput_keyboard.Controller()
+        controller.type(text)
+    except Exception as e:
+        logger.warning(f"pynput 打字失败，降级 keyboard.write: {e}")
+        keyboard.write(text)
 
 
 async def handle_typing_mode(text: str, paste: bool = None, matched_hotwords=None, role_config=None, content=None) -> tuple:
@@ -89,7 +108,7 @@ async def _process_streaming(handler, role_config, content, matched_hotwords) ->
 
         if content_to_write:
             logger.debug(f"output_text: keyboard.write '{content_to_write}'")
-            keyboard.write(content_to_write)
+            _type_write(content_to_write)
             pending_buffer = trailing
         else:
             pending_buffer = trailing
@@ -108,13 +127,13 @@ async def _process_streaming(handler, role_config, content, matched_hotwords) ->
     if not chunks:
         final_text = TextOutput.strip_punc(content)
         logger.debug(f"output_text: keyboard.write '{final_text}' (降级)")
-        keyboard.write(final_text)
+        _type_write(final_text)
         return (final_text, 0, 0.0)
     
     # 如果 LLM 只输出标点，会被拦截，就要做补偿输出
     full_output = ''.join(chunks).strip()
     if len(full_output) == 1 and full_output in Config.trash_punc:
-        keyboard.write(full_output)
+        _type_write(full_output)
     
     return (TextOutput.strip_punc(polished_text), token_count, gen_time)
 
@@ -125,4 +144,4 @@ async def output_text(text: str, paste: bool = None):
         await paste_text(text, restore_clipboard=Config.restore_clip)
     else:
         logger.debug(f"output_text: keyboard.write '{text}'")
-        keyboard.write(text)
+        _type_write(text)

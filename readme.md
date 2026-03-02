@@ -66,8 +66,9 @@ LLM 角色既可以使用 Ollama 运行的本地模型，又可以用 API 访问
 目前**Windows 10/11 (64位)** 体验最完整。
 
 -   **Windows**：完整支持（服务端 + 客户端 + 全局快捷键 + 托盘）。
--   **Linux**：首轮支持 `start_server.py` 和 `start_client.py <音视频文件>`（文件转录模式）。
-    -   暂不支持麦克风实时模式（全局快捷键依赖 Windows 事件过滤）。
+-   **Linux**：支持 `start_server.py`、`start_client.py <音视频文件>`，以及 **X11 下的麦克风实时模式**。
+    -   当前实时模式仅支持 **X11**（Wayland 暂不支持）。
+    -   Linux 实时模式默认使用“非阻塞监听”，按键原行为会保留。
     -   如需 UI 相关能力，请自行安装 `tkinter`（例如 Ubuntu: `sudo apt install python3-tk`）。
 -   **MacOS**：由于底层的 `keyboard` 库已放弃支持 MacOS，且系统权限限制极多，暂时无法支持。
 
